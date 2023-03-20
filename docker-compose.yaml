@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+
+  nginx:
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    image: joaolabs/nginx
+    container_name: nginx
+    ports:
+      - "8080:80"
+    networks:
+      - mynodinx
+    depends_on:
+      - node
+  
+  node:
+    build:
+      dockerfile: Dockerfile
+      context: ./node
+    image: joaolabs/node-app
+    container_name: node-app
+    hostname: express
+    tty: true
+    ports:
+      - "3000"
+    volumes:
+      - ./node/src:/opt/app/src
+    networks:
+      - mynodinx
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0 --init-file /opt/build/init.sql
+    container_name: mysql
+    restart: always
+    hostname: mysqldb
+    tty: true
+    ports:
+      - "3306"
+    volumes:
+      - ./mysql/bkp:/var/lib/mysql
+      - ./mysql/init:/opt/build
+      - ./mysql/conf:/etc/mysql/mysql.conf.d
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_HOST="0.0.0.0"
+    networks:
+      - mynodinx
+
+networks:
+  mynodinx:
+    driver: bridge
